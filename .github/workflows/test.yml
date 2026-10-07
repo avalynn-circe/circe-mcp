@@ -27,5 +27,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: The README passes its own checker
-        run: node dist/cli.js check README.md
+      - name: The README and the releasing guide pass their own checker
+        run: node dist/cli.js check README.md RELEASING.md --fail-on warning --include-optional

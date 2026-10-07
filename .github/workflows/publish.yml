@@ -1,0 +1,38 @@
+# Publishes to npm when a GitHub release is published. Uses npm trusted
+# publishing (OIDC), so no npm token is stored in the repository.
+#
+# One-time setup, after the first manual publish from a terminal:
+#   npmjs.com > circe-mcp > Settings > Trusted publishing > GitHub Actions
+#   Owner: avalynn-circe   Repository: circe-mcp   Workflow: publish.yml
+#   Environment: leave blank
+
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Test, build, publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - run: npm ci
+      - name: The tag must match package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION="$(node -p "require('./package.json').version")"
+          test "$TAG" = "$VERSION" || { echo "tag v$TAG does not match package.json $VERSION"; exit 1; }
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm publish --provenance --access public
