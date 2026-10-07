@@ -25,7 +25,9 @@
     "test:watch": "vitest",
     "start": "node dist/cli.js",
     "start:http": "node dist/cli.js http",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run typecheck && npm test && npm run build",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run typecheck && npm test"
   },
   "keywords": [
     "mcp",
@@ -51,5 +53,13 @@
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"
+  },
+  "mcpName": "io.github.avalynn-circe/circe-mcp",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/avalynn-circe/circe-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/avalynn-circe/circe-mcp/issues"
   }
 }
