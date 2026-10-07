@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.avalynn-circe/circe-mcp",
   "title": "Circe Editorial Standard Checker",
-  "description": "Checks text against the Circe Editorial Standard and reports each violation with its rule ID and a fix.",
+  "description": "Checks text against the Circe Editorial Standard. Reports each violation with rule ID and fix.",
   "websiteUrl": "https://github.com/avalynn-circe/circe-mcp#readme",
   "repository": {
     "url": "https://github.com/avalynn-circe/circe-mcp",
