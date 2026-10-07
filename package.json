@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "circe-mcp": "./dist/cli.js"
+    "circe-mcp": "dist/cli.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -40,7 +40,7 @@
   "author": "Avalynn Circe",
   "repository": {
     "type": "git",
-    "url": "https://github.com/avalynn-circe/circe-mcp"
+    "url": "git+https://github.com/avalynn-circe/circe-mcp.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
