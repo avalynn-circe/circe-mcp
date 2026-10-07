@@ -149,7 +149,7 @@ circe-mcp export-vale styles/Circe
 npm install
 npm test             # Vitest: fixtures per rule, positions, exceptions, fixes, export, MCP round trip
 npm run typecheck
-npm run build        # compiles to dist/ and copies the rules file
+npm run build        # compiles to dist/; the server reads rules/ces.yaml from the package root
 npm run check        # typecheck, test, build
 ```
 
