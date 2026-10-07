@@ -1,0 +1,497 @@
+# Circe Editorial Standard rules for circe-mcp.
+#
+# This file is the single source of truth (DECISIONS.md, D1). The server loads it
+# at startup, and `circe-mcp export-vale` generates the Vale style files that
+# circe-docs consumes.
+#
+# Rule fields
+#   id                CES rule identifier from the standard.
+#   name              Rule title as the standard writes it.
+#   category          Section of the standard.
+#   rating            Severity wording from the standard (MUST AVOID, SHOULD AVOID, MAY AVOID).
+#   severity          Default level for the rule's tokens: error | warning | suggestion.
+#   enabledByDefault  false marks an optional rule set; callers opt in (D7, D8).
+#   vale              Export settings, or false to keep the rule out of Vale.
+#     name            Base file name under styles/Circe. Tokens at a lower level than
+#                     the rule's highest level go to a second file with a level suffix.
+#     nonword         Vale's nonword flag (no word boundaries around tokens).
+#   description       One paragraph on the pattern and why it is a tell.
+#   message           Violation message. {match} is replaced with the matched text.
+#   suggestion        What to do about it.
+#   exception         When the pattern is allowed. Emitted into the Vale file comment.
+#   example           One before/after pair from the standard.
+#   detector          Name of a code heuristic in src/detectors.ts (no Vale export).
+#   tokens            Pattern list. Each token has either `phrase` (literal, whole words,
+#                     case-insensitive) or `regex` (JavaScript syntax). Optional fields:
+#     severity        Overrides the rule default for this token (D5).
+#     confidence      high | medium | low. Defaults to high for phrases.
+#     fixable         true when fix_text may apply `fix` automatically (D10).
+#     fix             Replacement text. Empty string deletes the match.
+#     form            Sub-form label from the standard, such as inferior-baseline (D3).
+#     vale            RE2-safe pattern for the Vale export when `regex` uses lookarounds.
+#                     false keeps the token out of Vale.
+#     note            Why the token is here or what it misses.
+
+standard: Circe Editorial Standard for Gen AI Content
+version: "0.3"
+rules:
+
+  - id: CES-P-001
+    name: No em dashes
+    category: Punctuation
+    rating: MUST AVOID
+    severity: error
+    enabledByDefault: true
+    vale:
+      name: EmDash
+      nonword: true
+    description: >-
+      The em dash character (U+2014) used as parenthetical or appositive
+      punctuation. Em dashes are valid English punctuation, but their frequency
+      in machine-generated text has made them a tell. Avoiding them entirely
+      removes the signal.
+    message: "Remove the em dash. End the sentence or use a comma."
+    suggestion: >-
+      Replace with a colon (introduces explanation), a semicolon (joins
+      independent clauses), a comma (parenthetical aside), parentheses (true
+      aside), or a new sentence. fix_text uses a comma.
+    example:
+      before: "The release shipped on time — a rare occurrence."
+      after: "The release shipped on time, a rare occurrence."
+    tokens:
+      - regex: '\u2014'
+        vale: '\x{2014}'
+        confidence: high
+        fixable: true
+        fix: ", "
+
+  - id: CES-Q-001
+    name: No reflexive hedges
+    category: Qualifiers and Modifiers
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: true
+    vale:
+      name: Hedges
+    description: >-
+      Words that soften or hedge a claim and, when removed, leave the sentence
+      stronger and the meaning unchanged.
+    message: "Hedge '{match}'. Delete it; the sentence holds without it."
+    suggestion: >-
+      Delete the qualifier. Read the sentence aloud. If the meaning is preserved
+      and the tone is more confident, the qualifier was decorative.
+    exception: >-
+      "Just" is permitted with temporal meaning ("the release just shipped").
+      "Actually" is permitted in headings where it does contrastive work.
+      The checker cannot tell these apart; review each hit.
+    example:
+      before: "It is actually faster than you might think."
+      after: "It is faster than you might think."
+    tokens:
+      - phrase: just
+        fixable: true
+        fix: ""
+      - phrase: actually
+        fixable: true
+        fix: ""
+      - phrase: really
+        fixable: true
+        fix: ""
+
+  - id: CES-Q-002
+    name: No hollow intensifiers
+    category: Qualifiers and Modifiers
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: true
+    vale:
+      name: Intensifiers
+    description: >-
+      Words that amplify a claim and contain no information themselves.
+      "Genuinely excited" is no more excited than "excited." The intensifier
+      anticipates skepticism, which itself signals insincerity.
+    message: "Hollow intensifier '{match}'. Delete it."
+    suggestion: >-
+      Delete the intensifier. If the resulting sentence reads weak, the problem
+      is the underlying claim.
+    example:
+      before: "I am genuinely excited about this role."
+      after: "I am excited about this role."
+    tokens:
+      - phrase: genuinely
+        fixable: true
+        fix: ""
+      - phrase: truly
+        fixable: true
+        fix: ""
+      - phrase: deeply
+        fixable: true
+        fix: ""
+        note: Flagged in every position. The standard limits it to emphasis ("deeply passionate").
+
+  - id: CES-C-001
+    name: No negate-then-elevate
+    category: Constructions
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: true
+    vale:
+      name: NegateThenElevate
+    description: >-
+      A construction that sets up a familiar or lesser idea, dismisses it, and
+      substitutes a "bigger" alternative. The contrast manufactures insight the
+      content has not earned, and the elevation is usually vaguer than the thing
+      dismissed.
+    message: "Negate-then-elevate '{match}'. State the positive claim directly."
+    suggestion: >-
+      State the positive claim directly. If the negation does necessary work,
+      name both halves with specific content. Most of the time the negation can
+      be deleted.
+    example:
+      before: "We don't write documentation. We design experiences."
+      after: "We design documentation that users reference daily."
+    tokens:
+      - regex: '\b(?:(?:it''?s|it is|this is|that''?s|they''?re|we''?re|\w+ is)\s+not|\w+ isn''?t)\s+(?:just\s+|only\s+|about\s+)?[^.;:!?\n]{1,60}?[,.;]\s*(?:it''?s|it is|they''?re|that''?s|this is)\b[^.;:!?\n]*'
+        confidence: medium
+        note: '"It''s not X, it''s Y." and "X isn''t about Y. It''s about Z."'
+      - regex: '\bwe (?:don''?t|do not)\s+[^.;:!?\n]{1,60}?\.\s*we\b[^.;:!?\n]*'
+        confidence: medium
+        note: '"We don''t do X. We do Y."'
+      - regex: '\bno\s+[\w -]{1,30}\.\s+no\s+[\w -]{1,30}\.\s+just\b[^.;:!?\n]*'
+        confidence: medium
+        note: '"No X. No Y. Just Z."'
+      - regex: '\bnot because\b[^.;:!?\n]{1,80}?\bbut because\b'
+        confidence: low
+        note: Flagged in every case. The standard limits it to vague halves.
+      - regex: '\bwhat\s+(?:\w+\s+){1,3}really\s+means\s+is\b'
+        confidence: high
+        note: Also trips CES-Q-001 on "really". Reported once with the hedge as related.
+      - phrase: "here's the thing nobody talks about"
+        confidence: high
+
+  - id: CES-C-002
+    name: No stylistic triple lists
+    category: Constructions
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: false
+    vale: false
+    detector: stylistic-triples
+    description: >-
+      Three-part lists used for rhythm or emphasis. The tell: the three items
+      reduce to two or one without losing meaning, or they are vague
+      abstractions presented in parallel.
+    message: "Possible stylistic triple '{match}'. Keep it only if all three items are necessary and specific."
+    suggestion: >-
+      Reduce to one specific claim or rewrite as a sentence with discrete
+      clauses. If the items are independent, list them with concrete content.
+    exception: >-
+      Enumerations where all three items are necessary and specific ("Python,
+      JavaScript, and TypeScript"), defined frameworks, and required process
+      steps are permitted. The detector skips items that start with a capital
+      letter or contain a digit.
+    example:
+      before: "Fast, scalable, and reliable."
+      after: "Handles 10,000 requests per second with 99.95% uptime."
+
+  - id: CES-C-003
+    name: No throat-clearing runways
+    category: Constructions
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: true
+    vale:
+      name: ThroatClear
+    description: >-
+      A setup clause whose only function is to announce content before
+      delivering it. The clause carries no information of its own. The reader
+      does not need to be told a point is coming.
+    message: "Throat-clearing runway '{match}'. Delete it and open with the content."
+    suggestion: >-
+      Delete the runway and open with the content. If the content needs
+      context, the context is itself content and should be specific.
+    example:
+      before: "Prior experience backs this up: I built reporting dashboards at Lacek."
+      after: "I built reporting dashboards at Lacek."
+    tokens:
+      - phrase: "it's worth noting that"
+      - phrase: "it is worth noting that"
+      - phrase: "it's worth noting"
+        note: Shorter form. Reported once with the longer form as related when both match.
+      - phrase: "here's how I'd approach it"
+      - phrase: "the key thing is"
+      - phrase: "prior experience backs this up"
+      - phrase: "it's important to note that"
+      - phrase: "it is important to note that"
+
+  - id: CES-C-004
+    name: No trailing bows
+    category: Constructions
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: true
+    vale:
+      name: TrailingBow
+    description: >-
+      A clause appended after the point has landed, editorializing on the
+      content without adding to it. The sentence is complete before the bow
+      arrives. The bow evaluates; it does not inform.
+    message: "Trailing bow '{match}'. End the sentence where the content ends."
+    suggestion: >-
+      End the sentence where the content ends. A permitted explicit-statement
+      line (CES-C-007) is the only place a point is stated; a bow comments on a
+      point already stated.
+    example:
+      before: "Publish it where the conversation is happening, and the reach takes care of itself."
+      after: "Publish it where the conversation is happening."
+    tokens:
+      - regex: ',\s*and that''?s (?:the point|what matters|the power of|what counts|the whole point)\b'
+        vale: ',\s*and that''?s (the point|what matters|the power of|what counts|the whole point)'
+      - regex: ',\s*which is (?:the whole point|what matters|the point)\b'
+        vale: ',\s*which is (the whole point|what matters|the point)'
+      - regex: ',\s*which says it all\b'
+        vale: ',\s*which says it all'
+      - regex: ',\s*and the \w+ takes care of itself\b'
+        vale: ',\s*and the \w+ takes care of itself'
+
+  - id: CES-C-005
+    name: No so-what gloss
+    category: Constructions
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: true
+    vale:
+      name: SoWhatGloss
+    description: >-
+      A sentence that tells the reader what to conclude from the preceding
+      fact. The gloss assumes the reader cannot draw the obvious inference, and
+      it tends to be vaguer than the fact it interprets.
+    message: "So-what gloss '{match}'. Delete it and let the fact stand."
+    suggestion: >-
+      Delete the gloss. If the connection is not obvious from the fact, the
+      fact is in the wrong place or stated wrong. Fix the fact.
+    example:
+      before: "The tests pass on every commit. That's no accident."
+      after: "The tests pass on every commit."
+    tokens:
+      - regex: '(?<=^|[.!?]\s+)(?:and )?that''?s (?:no accident|what makes|the power of|the point|the difference)\b'
+        vale: '(?:^|[.!?]\s+)(and )?that''?s (no accident|what makes|the power of|the point|the difference)'
+        note: Sentence-initial closers. The sentence-final form with a comma is CES-C-004.
+      - phrase: "which tells you everything you need to know"
+      - regex: '\bis the same muscle as\b'
+        vale: 'is the same muscle as'
+
+  - id: CES-C-008
+    name: No trailing contrast clauses
+    category: Constructions
+    rating: MUST AVOID
+    severity: error
+    enabledByDefault: true
+    vale:
+      name: TrailingContrast
+    description: >-
+      A sentence that makes a positive point and then appends a clause naming
+      the alternative it supposedly surpasses. The contrast is redundant at best
+      and elitist at worst: it restates what the sentence established, or it
+      implies the reader holds the lesser view.
+    message: "Trailing contrast clause '{match}'. End the sentence at the positive point."
+    suggestion: End the sentence at the positive point.
+    exception: >-
+      Keep a contrast when the alternative is factual information the reader
+      needs, such as a migration ("moved from MS Access to SQL Server") or a
+      configuration choice the reader must make. Mark it with
+      <!-- vale Circe.TrailingContrast = NO --> or the ignore parameter.
+    example:
+      before: "The server tells the user that this server can't help, instead of calling the tool and reporting a failure."
+      after: "The server tells the user that this server can't help."
+    tokens:
+      - phrase: rather than
+      - phrase: instead of
+      - phrase: not only
+      - phrase: not just
+        note: Also listed under CES-V-007 in the standard. Reported here only (D2).
+      - phrase: go beyond
+        severity: warning
+        confidence: medium
+        note: '"beyond" phrases carry the elevating move but can be literal (D5).'
+      - phrase: goes beyond
+        severity: warning
+        confidence: medium
+      - phrase: move beyond
+        severity: warning
+        confidence: medium
+      - phrase: far beyond
+        severity: warning
+        confidence: medium
+      - phrase: well beyond
+        severity: warning
+        confidence: medium
+
+  - id: CES-V-001
+    name: No resume cliches
+    category: Voice and Register
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: false
+    vale:
+      name: ResumeCliches
+    description: >-
+      Stock phrases from job application templates that signal generic AI
+      output or unedited corporate language. They convey enthusiasm or
+      competence in the abstract and nothing specific.
+    message: "Resume cliche '{match}'. Replace it with the specific claim."
+    suggestion: >-
+      Replace with a specific claim. Replace "proven track record" with the
+      track record. Replace "impactful outcomes" with the outcome. Replace
+      "leverage my skills" with what the skills are and what they did.
+    example:
+      before: "Proven track record of delivering impactful outcomes."
+      after: "Shipped the Xerxes conference portal; reduced an 8-person workflow to 1 dispatcher."
+    tokens:
+      - phrase: delighted to apply
+      - phrase: leverage
+        confidence: medium
+      - phrase: proven track record
+      - phrase: passionate about
+        confidence: medium
+      - phrase: deeply passionate
+      - phrase: results-driven
+      - phrase: results-oriented
+      - phrase: impactful
+      - phrase: perfect fit
+      - phrase: ideal candidate
+      - phrase: unique skill set
+      - phrase: synergy
+      - phrase: synergize
+      - phrase: circle back
+      - phrase: touch base
+      - phrase: wheelhouse
+      - phrase: bring to the table
+      - phrase: hit the ground running
+      - phrase: go-to person
+      - phrase: thought leader
+      - phrase: best-in-class
+      - phrase: world-class
+      - phrase: cutting-edge
+      - phrase: next-generation
+      - phrase: robust solution
+      - phrase: seamless
+      - phrase: seamlessly
+      - phrase: comprehensive
+        confidence: low
+        note: Only a cliche as a vague adjective. Expect false positives.
+      - phrase: throughout my career
+      - phrase: would love to be considered
+      - phrase: making a real difference
+
+  - id: CES-V-006
+    name: No chatty asides
+    category: Voice and Register
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: true
+    vale:
+      name: ChattyAsides
+    description: >-
+      Conversational interjections that establish writer presence at the cost
+      of the reader's time. Includes the signature openers of casual sass.
+    message: "Chatty aside '{match}'. Delete it and start with the content."
+    suggestion: Delete. Start with the content.
+    example:
+      before: "Let's dive in. The config file has three sections."
+      after: "The config file has three sections."
+    tokens:
+      - phrase: let's dive in
+      - phrase: let's unpack this
+      - phrase: let's explore
+        confidence: medium
+      - phrase: here's the thing
+      - phrase: the truth is
+        confidence: medium
+      - phrase: spoiler alert
+      - phrase: "spoiler:"
+      - phrase: long story short
+      - phrase: without further ado
+      - phrase: buckle up
+      - phrase: you might be wondering
+      - phrase: "plot twist:"
+      - phrase: "pro tip:"
+      - phrase: "fun fact:"
+      - phrase: "translation:"
+        confidence: low
+        note: Sass marker only when it opens a sentence. Expect hits in localization text.
+      - phrase: yes, really
+      - phrase: wait for it
+
+  - id: CES-V-007
+    name: No punchy-for-punchiness'-sake flourishes
+    category: Voice and Register
+    rating: MUST AVOID
+    severity: error
+    enabledByDefault: true
+    vale:
+      name: InferiorBaseline
+    detector: fragment-flourish
+    description: >-
+      Writing that performs wit or cleverness as a stylistic end in itself,
+      without adding content. Two forms are detectable. Implied inferior
+      baselines are words that imply an unstated lesser alternative ("real
+      projects", "in practice"). Fragment flourishes are clauses of three words
+      or fewer that exist to land, not to inform.
+    message: "Flourish '{match}'. Delete it or make the claim as a plain statement."
+    suggestion: >-
+      Delete the flourish. If the underlying claim is worth making, make it as
+      a plain statement. For an inferior baseline, state the fact without
+      contrasting it to a lesser version.
+    exception: >-
+      A short declarative that is the sole explicit statement of a paragraph's
+      point is permitted (CES-C-007). The fragment detector cannot judge load;
+      review each hit.
+    example:
+      before: "A template that doesn't fall apart on real projects."
+      after: "A template tested on the Xerxes portal and two client sites."
+    tokens:
+      - phrase: in practice
+        form: inferior-baseline
+        severity: error
+        confidence: high
+      - phrase: not abstract
+        form: inferior-baseline
+        severity: warning
+        confidence: medium
+        note: Not yet listed in the standard. Promote when it is (D4 amendment).
+      - regex: '\breal\b(?!-)'
+        vale: 'real'
+        form: inferior-baseline
+        severity: warning
+        confidence: low
+        note: Plain adjective uses ("real estate") are false positives. "real-time" is skipped.
+
+  - id: CES-V-008
+    name: "Quit while you're ahead: no gratuitous trailing clauses"
+    category: Voice and Register
+    rating: SHOULD AVOID
+    severity: warning
+    enabledByDefault: true
+    vale:
+      name: TrailingMinimizer
+    description: >-
+      A sentence or clause that makes its point and then continues past it.
+      The detectable form is the trailing minimizer, a word that shrinks the
+      alternative just named ("abstract standards alone").
+    message: "Trailing minimizer '{match}'. Find where the sentence lands and end it there."
+    suggestion: Find where the sentence lands. End it there.
+    example:
+      before: "Grounding interface decisions in real-world usability, not abstract standards alone."
+      after: "Grounding interface decisions in real-world usability."
+    tokens:
+      - regex: '\balone(?=[.,;:!?])'
+        vale: 'alone[.,;:!?]'
+        form: minimizer
+        confidence: medium
+        note: Clause-final only. "Working alone" mid-sentence is not flagged.
+      - phrase: merely
+        form: minimizer
+      - phrase: mere
+        form: minimizer
+        confidence: medium

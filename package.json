@@ -1,0 +1,57 @@
+{
+  "name": "circe-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that checks text against the Circe Editorial Standard and reports each violation with its rule ID, position, and a suggested fix.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "circe-mcp": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "rules",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && cp -r rules dist/rules",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "start": "node dist/cli.js",
+    "start:http": "node dist/cli.js http",
+    "export-vale": "node dist/cli.js export-vale",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "editorial",
+    "style-guide",
+    "linter",
+    "vale",
+    "writing"
+  ],
+  "author": "Avalynn Circe",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/avalynn-circe/circe-mcp"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
+  }
+}
