@@ -146,7 +146,6 @@ export function createServer(options: ServerOptions = {}): McpServer {
         suggestion: z.string(),
         exception: z.string().optional(),
         example: z.object({ before: z.string(), after: z.string() }).optional(),
-        valeName: z.string().optional(),
         detector: z.string().optional(),
         tokens: z.array(
           z.object({
@@ -267,7 +266,6 @@ function explain(rule: Rule) {
     suggestion: rule.suggestion,
     exception: rule.exception,
     example: rule.example,
-    valeName: rule.vale ? rule.vale.name : undefined,
     detector: rule.detector,
     tokens: (rule.tokens ?? []).map((t) => ({
       pattern: t.phrase ?? t.regex!,

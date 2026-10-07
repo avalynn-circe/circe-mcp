@@ -58,7 +58,7 @@ describe("Markdown handling", () => {
     expect(checker.check(text, { checkCode: true }).violations.map((v) => v.ruleId)).toEqual(["CES-C-008"]);
   });
 
-  it("checks front matter, as Vale does", () => {
+  it("checks front matter, because a page description is prose", () => {
     const text = "---\ndescription: this is rather than that\n---\n\nBody.\n";
     expect(checker.check(text).violations.map((v) => v.ruleId)).toEqual(["CES-C-008"]);
   });
@@ -74,20 +74,28 @@ describe("Markdown handling", () => {
 describe("exceptions", () => {
   const sentence = "Moved the reports from MS Access to SQL Server rather than rewriting them.";
 
-  it("honors Vale inline comments by style name", () => {
-    const text = `<!-- vale Circe.TrailingContrast = NO -->\n${sentence}\n<!-- vale Circe.TrailingContrast = YES -->\n\nStill flagged rather than ignored.`;
+  it("honors an ignore block for one rule", () => {
+    const text = `<!-- ces ignore CES-C-008 -->\n${sentence}\n<!-- ces end -->\n\nStill flagged rather than ignored.`;
     const ids = checker.check(text).violations.map((v) => `${v.ruleId}@${v.line}`);
     expect(ids).toEqual(["CES-C-008@5"]);
   });
 
-  it("honors Vale inline comments by rule ID and the bare form without the style prefix", () => {
-    expect(checker.check(`<!-- vale CES-C-008 = NO -->\n${sentence}`).violations).toEqual([]);
-    expect(checker.check(`<!-- vale TrailingContrast = NO -->\n${sentence}`).violations).toEqual([]);
+  it("accepts several rule IDs, any case, and runs to the end of the text without an end marker", () => {
+    expect(checker.check(`<!-- ces ignore ces-c-008, CES-Q-001 -->\n${sentence} It is actually fine.`).violations).toEqual([]);
   });
 
-  it("honors vale off / vale on", () => {
-    const text = `<!-- vale off -->\n${sentence} It is actually fine.\n<!-- vale on -->\nBut this is actually flagged.`;
+  it("closes only the named rule when end names one", () => {
+    const text = `<!-- ces ignore CES-C-008 CES-Q-001 -->\n<!-- ces end CES-Q-001 -->\n${sentence} It is actually fine.`;
+    expect(checker.check(text).violations.map((v) => v.ruleId)).toEqual(["CES-Q-001"]);
+  });
+
+  it("honors ces off / ces on", () => {
+    const text = `<!-- ces off -->\n${sentence} It is actually fine.\n<!-- ces on -->\nBut this is actually flagged.`;
     expect(checker.check(text).violations.map((v) => v.line)).toEqual([4]);
+  });
+
+  it("ignores comments that are not directives", () => {
+    expect(checker.check(`<!-- TODO: rewrite -->\n${sentence}`).violations.map((v) => v.ruleId)).toEqual(["CES-C-008"]);
   });
 
   it("honors the ignore parameter", () => {
@@ -96,7 +104,7 @@ describe("exceptions", () => {
   });
 
   it("does not let a directive for one rule silence another", () => {
-    const text = `<!-- vale Circe.TrailingContrast = NO -->\n${sentence} It is actually fine.`;
+    const text = `<!-- ces ignore CES-C-008 -->\n${sentence} It is actually fine.`;
     expect(checker.check(text).violations.map((v) => v.ruleId)).toEqual(["CES-Q-001"]);
   });
 });

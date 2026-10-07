@@ -1,12 +1,15 @@
 /**
  * Prepares Markdown for checking. Regions that must not be linted (code, URLs,
  * comments, HTML tags) are replaced with spaces so that every offset in the
- * masked text equals the same offset in the original. Vale inline directives
- * become disabled ranges.
+ * masked text equals the same offset in the original. Inline directives in
+ * HTML comments become disabled ranges:
+ *
+ *   <!-- ces ignore CES-C-008 -->  ...  <!-- ces end -->      one or more rule IDs
+ *   <!-- ces off -->               ...  <!-- ces on -->       every rule
  */
 
 export interface DisabledRange {
-  /** Vale style name ("TrailingContrast"), a rule ID ("CES-C-008"), or "*" for all. */
+  /** A rule ID ("CES-C-008") or "*" for every rule. */
   key: string;
   start: number;
   end: number;
@@ -41,7 +44,7 @@ export function prepare(text: string, options: PrepareOptions = {}): Prepared {
     masked = chars.join("");
   };
 
-  // Front matter is checked, as Vale checks it: a page description is prose.
+  // Front matter is checked: a page description is prose.
 
   // Fenced code blocks.
   if (!options.checkCode) {
@@ -62,7 +65,7 @@ export function prepare(text: string, options: PrepareOptions = {}): Prepared {
     });
   }
 
-  // HTML comments, with Vale directives.
+  // HTML comments, with directives.
   stage((cur) => {
     const ranges: Array<[number, number]> = [];
     const comment = /<!--([\s\S]*?)-->/g;
@@ -78,14 +81,13 @@ export function prepare(text: string, options: PrepareOptions = {}): Prepared {
     while ((c = comment.exec(cur))) {
       const body = c[1]!.trim();
       const after = c.index + c[0].length;
-      const toggle = /^vale\s+(?:Circe\.)?([\w-]+)\s*=\s*(YES|NO)$/i.exec(body);
-      const all = /^vale\s+(on|off)$/i.exec(body);
-      if (toggle) {
-        const key = toggle[1]!;
-        if (toggle[2]!.toUpperCase() === "NO") openRanges.set(key, after);
-        else closeRange(key, c.index);
-      } else if (all) {
-        if (all[1]!.toLowerCase() === "off") openRanges.set("*", after);
+      const d = /^ces\s+(ignore|end|off|on)\b\s*(.*)$/i.exec(body);
+      if (d) {
+        const verb = d[1]!.toLowerCase();
+        const ids = (d[2] ?? "").split(/[\s,]+/).filter(Boolean).map((id) => id.toUpperCase());
+        if (verb === "ignore") for (const id of ids) openRanges.set(id, after);
+        else if (verb === "end") for (const id of ids.length ? ids : [...openRanges.keys()].filter((k) => k !== "*")) closeRange(id, c.index);
+        else if (verb === "off") openRanges.set("*", after);
         else closeRange("*", c.index);
       }
       ranges.push([c.index, after]);

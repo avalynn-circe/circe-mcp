@@ -34,7 +34,7 @@ export class Checker {
     this.ruleSet = ruleSet;
     this.compiled = ruleSet.rules.map((rule) => ({
       rule,
-      keys: rule.vale ? [rule.id, rule.vale.name, `${rule.vale.name}Warning`, `${rule.vale.name}Suggestion`] : [rule.id],
+      keys: [rule.id],
       tokens: (rule.tokens ?? []).map((token) => ({
         token,
         regex: compileToken(token),

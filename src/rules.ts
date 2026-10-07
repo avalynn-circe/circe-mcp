@@ -43,12 +43,6 @@ function validateRule(raw: unknown, where: string): Rule {
   const severity = str(raw, "severity", where) as Severity;
   if (!SEVERITIES.includes(severity)) throw new Error(`${where}: bad severity "${severity}"`);
 
-  let vale: Rule["vale"];
-  if (raw.vale === false) vale = false;
-  else if (isRecord(raw.vale) && typeof raw.vale.name === "string") {
-    vale = { name: raw.vale.name, nonword: raw.vale.nonword === true };
-  } else throw new Error(`${where}: "vale" must be false or {name}`);
-
   const tokens = raw.tokens === undefined ? undefined : validateTokens(raw.tokens, where);
   const detector = raw.detector === undefined ? undefined : str(raw, "detector", where);
   if (!tokens?.length && !detector) throw new Error(`${where}: needs tokens or a detector`);
@@ -66,7 +60,6 @@ function validateRule(raw: unknown, where: string): Rule {
     rating: str(raw, "rating", where),
     severity,
     enabledByDefault: raw.enabledByDefault !== false,
-    vale,
     description: str(raw, "description", where).trim(),
     message: str(raw, "message", where),
     suggestion: str(raw, "suggestion", where).trim(),

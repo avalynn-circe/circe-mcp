@@ -1,4 +1,4 @@
-/** Severity levels, matching Vale's three levels. */
+/** Severity levels: error fails a check, warning and suggestion report. */
 export type Severity = "error" | "warning" | "suggestion";
 
 export const SEVERITY_ORDER: Record<Severity, number> = {
@@ -17,13 +17,7 @@ export interface RuleToken {
   fixable?: boolean;
   fix?: string;
   form?: string;
-  vale?: string | false;
   note?: string;
-}
-
-export interface ValeExport {
-  name: string;
-  nonword?: boolean;
 }
 
 export interface RuleExample {
@@ -38,7 +32,6 @@ export interface Rule {
   rating: string;
   severity: Severity;
   enabledByDefault: boolean;
-  vale: ValeExport | false;
   description: string;
   message: string;
   suggestion: string;

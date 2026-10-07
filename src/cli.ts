@@ -2,7 +2,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Checker } from "./check.js";
-import { exportVale, readmeTable } from "./export-vale.js";
 import { fixText } from "./fix.js";
 import { measureText } from "./measure.js";
 import { loadRules } from "./rules.js";
@@ -18,8 +17,6 @@ Usage:
       [--fail-on error|warning|suggestion] [--include-optional] [--json]
   circe-mcp fix <file> [--write]    Print the text with safe fixes applied, or write it back.
   circe-mcp measure <file>          Print statistics for a file as JSON.
-  circe-mcp export-vale <dir>       Write Vale style files into <dir> (a Vale StylesPath folder).
-      [--readme-table]              Also print a Markdown rule table for the README.
   circe-mcp --help | --version
 `;
 
@@ -84,16 +81,6 @@ async function main(argv: string[]): Promise<number> {
     const file = positional[0];
     if (!file) return usage("measure needs a file");
     process.stdout.write(JSON.stringify(measureText(readFileSync(file, "utf8")), null, 2) + "\n");
-    return 0;
-  }
-
-  if (command === "export-vale") {
-    const dir = positional[0];
-    if (!dir) return usage("export-vale needs a target directory");
-    const result = exportVale(checker.ruleSet, dir);
-    for (const f of result.files) process.stderr.write(`wrote ${dir}/${f.path} (${f.level}, ${f.tokens.length} tokens)\n`);
-    for (const s of result.skipped) process.stderr.write(`skipped ${s}\n`);
-    if (flags.has("--readme-table")) process.stdout.write(readmeTable(checker.ruleSet) + "\n");
     return 0;
   }
 

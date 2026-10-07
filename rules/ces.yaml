@@ -1,8 +1,7 @@
 # Circe Editorial Standard rules for circe-mcp.
 #
 # This file is the single source of truth (DECISIONS.md, D1). The server loads it
-# at startup, and `circe-mcp export-vale` generates an equivalent Vale style for
-# projects that lint with Vale.
+# at startup.
 #
 # Rule fields
 #   id                CES rule identifier from the standard.
@@ -11,16 +10,12 @@
 #   rating            Severity wording from the standard (MUST AVOID, SHOULD AVOID, MAY AVOID).
 #   severity          Default level for the rule's tokens: error | warning | suggestion.
 #   enabledByDefault  false marks an optional rule set; callers opt in (D7, D8).
-#   vale              Export settings, or false to keep the rule out of Vale.
-#     name            Base file name under styles/Circe. Tokens at a lower level than
-#                     the rule's highest level go to a second file with a level suffix.
-#     nonword         Vale's nonword flag (no word boundaries around tokens).
 #   description       One paragraph on the pattern and why it is a tell.
 #   message           Violation message. {match} is replaced with the matched text.
 #   suggestion        What to do about it.
-#   exception         When the pattern is allowed. Emitted into the Vale file comment.
+#   exception         When the pattern is allowed.
 #   example           One before/after pair from the standard.
-#   detector          Name of a code heuristic in src/detectors.ts (no Vale export).
+#   detector          Name of a code heuristic in src/detectors.ts.
 #   tokens            Pattern list. Each token has either `phrase` (literal, whole words,
 #                     case-insensitive) or `regex` (JavaScript syntax). Optional fields:
 #     severity        Overrides the rule default for this token (D5).
@@ -28,8 +23,6 @@
 #     fixable         true when fix_text may apply `fix` automatically (D10).
 #     fix             Replacement text. Empty string deletes the match.
 #     form            Sub-form label from the standard, such as inferior-baseline (D3).
-#     vale            RE2-safe pattern for the Vale export when `regex` uses lookarounds.
-#                     false keeps the token out of Vale.
 #     note            Why the token is here or what it misses.
 
 standard: Circe Editorial Standard for Gen AI Content
@@ -42,9 +35,6 @@ rules:
     rating: MUST AVOID
     severity: error
     enabledByDefault: true
-    vale:
-      name: EmDash
-      nonword: true
     description: >-
       The em dash character (U+2014) used as parenthetical or appositive
       punctuation. Em dashes are valid English punctuation, but their frequency
@@ -60,7 +50,6 @@ rules:
       after: "The release shipped on time, a rare occurrence."
     tokens:
       - regex: '\u2014'
-        vale: '\x{2014}'
         confidence: high
         fixable: true
         fix: ", "
@@ -71,8 +60,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: true
-    vale:
-      name: Hedges
     description: >-
       Words that soften or hedge a claim and, when removed, leave the sentence
       stronger and the meaning unchanged.
@@ -104,8 +91,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: true
-    vale:
-      name: Intensifiers
     description: >-
       Words that amplify a claim and contain no information themselves.
       "Genuinely excited" is no more excited than "excited." The intensifier
@@ -135,8 +120,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: true
-    vale:
-      name: NegateThenElevate
     description: >-
       A construction that sets up a familiar or lesser idea, dismisses it, and
       substitutes a "bigger" alternative. The contrast manufactures insight the
@@ -175,7 +158,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: false
-    vale: false
     detector: stylistic-triples
     description: >-
       Three-part lists used for rhythm or emphasis. The tell: the three items
@@ -200,8 +182,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: true
-    vale:
-      name: ThroatClear
     description: >-
       A setup clause whose only function is to announce content before
       delivering it. The clause carries no information of its own. The reader
@@ -230,8 +210,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: true
-    vale:
-      name: TrailingBow
     description: >-
       A clause appended after the point has landed, editorializing on the
       content without adding to it. The sentence is complete before the bow
@@ -246,13 +224,9 @@ rules:
       after: "Publish it where the conversation is happening."
     tokens:
       - regex: ',\s*and that''?s (?:the point|what matters|the power of|what counts|the whole point)\b'
-        vale: ',\s*and that''?s (the point|what matters|the power of|what counts|the whole point)'
       - regex: ',\s*which is (?:the whole point|what matters|the point)\b'
-        vale: ',\s*which is (the whole point|what matters|the point)'
       - regex: ',\s*which says it all\b'
-        vale: ',\s*which says it all'
       - regex: ',\s*and the \w+ takes care of itself\b'
-        vale: ',\s*and the \w+ takes care of itself'
 
   - id: CES-C-005
     name: No so-what gloss
@@ -260,8 +234,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: true
-    vale:
-      name: SoWhatGloss
     description: >-
       A sentence that tells the reader what to conclude from the preceding
       fact. The gloss assumes the reader cannot draw the obvious inference, and
@@ -275,11 +247,9 @@ rules:
       after: "The tests pass on every commit."
     tokens:
       - regex: '(?<=^|[.!?]\s+)(?:and )?that''?s (?:no accident|what makes|the power of|the point|the difference)\b'
-        vale: '(?:^|[.!?]\s+)(and )?that''?s (no accident|what makes|the power of|the point|the difference)'
         note: Sentence-initial closers. The sentence-final form with a comma is CES-C-004.
       - phrase: "which tells you everything you need to know"
       - regex: '\bis the same muscle as\b'
-        vale: 'is the same muscle as'
 
   - id: CES-C-008
     name: No trailing contrast clauses
@@ -287,8 +257,6 @@ rules:
     rating: MUST AVOID
     severity: error
     enabledByDefault: true
-    vale:
-      name: TrailingContrast
     description: >-
       A sentence that makes a positive point and then appends a clause naming
       the alternative it supposedly surpasses. The contrast is redundant at best
@@ -300,7 +268,7 @@ rules:
       Keep a contrast when the alternative is factual information the reader
       needs, such as a migration ("moved from MS Access to SQL Server") or a
       configuration choice the reader must make. Mark it with
-      <!-- vale Circe.TrailingContrast = NO --> or the ignore parameter.
+      <!-- ces ignore CES-C-008 --> or the ignore parameter.
     example:
       before: "The server tells the user that this server can't help, instead of calling the tool and reporting a failure."
       after: "The server tells the user that this server can't help."
@@ -333,8 +301,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: false
-    vale:
-      name: ResumeCliches
     description: >-
       Stock phrases from job application templates that signal generic AI
       output or unedited corporate language. They convey enthusiasm or
@@ -390,8 +356,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: true
-    vale:
-      name: ChattyAsides
     description: >-
       Conversational interjections that establish writer presence at the cost
       of the reader's time. Includes the signature openers of casual sass.
@@ -429,8 +393,6 @@ rules:
     rating: MUST AVOID
     severity: error
     enabledByDefault: true
-    vale:
-      name: InferiorBaseline
     detector: fragment-flourish
     description: >-
       Writing that performs wit or cleverness as a stylistic end in itself,
@@ -461,7 +423,6 @@ rules:
         confidence: medium
         note: Not yet listed in the standard. Promote when it is (D4 amendment).
       - regex: '\breal\b(?!-)'
-        vale: 'real'
         form: inferior-baseline
         severity: warning
         confidence: low
@@ -473,8 +434,6 @@ rules:
     rating: SHOULD AVOID
     severity: warning
     enabledByDefault: true
-    vale:
-      name: TrailingMinimizer
     description: >-
       A sentence or clause that makes its point and then continues past it.
       The detectable form is the trailing minimizer, a word that shrinks the
@@ -486,7 +445,6 @@ rules:
       after: "Grounding interface decisions in real-world usability."
     tokens:
       - regex: '\balone(?=[.,;:!?])'
-        vale: 'alone[.,;:!?]'
         form: minimizer
         confidence: medium
         note: Clause-final only. "Working alone" mid-sentence is not flagged.

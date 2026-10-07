@@ -4,9 +4,9 @@
 
 **Original decision:** Rules live in circe-mcp as a single YAML rules file. The server exports the Vale styles (`npx circe-mcp export-vale`), and circe-docs consumes that output.
 
-**Amended decision:** Rules live in circe-mcp as a single YAML rules file. The server exports an equivalent Vale style for any project that lints with Vale. No other project is named as a consumer; see D14.
+**Amended decision:** Rules live in circe-mcp as a single YAML rules file. The server reads it at startup. Nothing else is generated from it, and no other project consumes it; see D14 and D15.
 
-**Why:** Put the rules where they are edited most. Rule changes will come mostly from building and testing the server. Each rule entry can carry examples and fix data that Vale YAML can't hold. Heuristic rules are marked `vale: false` and skipped in the export.
+**Why:** Put the rules where they are edited most. Rule changes will come mostly from building and testing the server. Each rule entry can carry examples, fix data, per-token severity, and confidence. Heuristic rules name a detector in code.
 
 **Revisit if:** the standard is adopted by others, at which point it may move to its own package.
 
@@ -80,7 +80,9 @@
 
 ## D9. Exceptions (2026-10-07)
 
-**Decision:** Option C. Honor Vale inline comments (`<!-- vale Circe.TrailingContrast = NO -->`) and add an `ignore` parameter to `check_text` listing rule IDs to skip.
+**Original decision:** Option C. Honor Vale inline comments (`<!-- vale Circe.TrailingContrast = NO -->`) and add an `ignore` parameter to `check_text` listing rule IDs to skip.
+
+**Amended (D15):** The inline form is the server's own directive, keyed by rule ID: `<!-- ces ignore CES-C-008 -->` ... `<!-- ces end -->`, with `<!-- ces off -->` / `<!-- ces on -->` for a whole section. The `ignore` parameter stays.
 
 ## D10. `fix_text` scope (2026-10-07)
 
@@ -105,9 +107,9 @@ The server, README, and `list_rules` output cite v0.3.
 
 "Not abstract" appears nowhere in CES v0.3. The nearest text is the C-008 example "rather than abstract standards alone." Until the standard lists it, the token ships at **warning, medium confidence**, not error / high. Promote when v0.4 names it.
 
-## D5. "beyond" export (amended)
+## D5. "beyond" export (amended, then superseded)
 
-CES-C-008 is MUST AVOID and a Vale `existence` rule carries one level per file. `export-vale` emits two files for one rule ID when tokens have mixed severity: `TrailingContrast.yml` (error) and `TrailingContrastWarning.yml` (warning). The suffix is the level, so the same scheme covers CES-V-007 (`InferiorBaseline.yml`, `InferiorBaselineWarning.yml`). The rules file's per-token severity drives the split.
+Mixed token severities under one rule ID were going to need two Vale files. With the Vale export removed (D15) the rules file simply carries a `severity` per token and the checker reports each token at its own level.
 
 ## D6a. Re-ID the new Phase 1 rules (amended)
 
@@ -125,11 +127,11 @@ CES-C-008 is MUST AVOID and a Vale `existence` rule carries one level per file. 
 
 ## D10. Fixable flag (amended)
 
-Auto-fix stays for em dashes, hedges, and intensifiers, but only for tokens marked `fixable: true` in the rules file. Vale's current six tokens are all fixable. When the Q-001 and Q-002 lists grow to the standard's 20 and 11 words, conditional tokens ("just" temporal, "actually" in headings, "often," "pretty," "specifically," "deeply" as emphasis) ship `fixable: false`.
+Auto-fix stays for em dashes, hedges, and intensifiers, but only for tokens marked `fixable: true` in the rules file. The original six tokens are all fixable. When the Q-001 and Q-002 lists grow to the standard's 20 and 11 words, conditional tokens ("just" temporal, "actually" in headings, "often," "pretty," "specifically," "deeply" as emphasis) ship `fixable: false`.
 
 ## D12. Code blocks (new)
 
-CES-K-003 (MAY) says comments inside code blocks follow all rules. The server skips fenced code blocks and inline code by default, matching Vale. A `checkCode: true` option on `check_text` lints code blocks too. Recorded so the skip is a decision, not an omission.
+CES-K-003 (MAY) says comments inside code blocks follow all rules. The server skips fenced code blocks and inline code by default. A `checkCode: true` option on `check_text` lints code blocks too. Recorded so the skip is a decision, not an omission.
 
 ## D13. Phase 1.5 scope (new, 2026-10-07)
 
@@ -150,7 +152,7 @@ Not planned for any phase (need human judgment or are not text rules): A-001, A-
 
 ## Test fixture from Appendix B
 
-"Onboarding is a path rather than a finish line" (the C-007 worked example) trips C-008. It is the fixture for D9 exception handling: flagged without an ignore, clean with `<!-- vale Circe.TrailingContrast = NO -->` or `ignore: ["CES-C-008"]`.
+"Onboarding is a path rather than a finish line" (the C-007 worked example) trips C-008. It is the fixture for D9 exception handling: flagged without an ignore, clean inside `<!-- ces ignore CES-C-008 -->` or with `ignore: ["CES-C-008"]`.
 
 ## D14. Independence from circe-docs (2026-10-07)
 
@@ -160,16 +162,24 @@ Not planned for any phase (need human judgment or are not text rules): A-001, A-
 
 **Consequence:** The handoff's release step "add a page to circe-docs" is dropped from this project's plan.
 
+## D15. No Vale export (2026-10-07)
+
+**Decision:** Remove `export-vale`, the `vale` fields on rules and tokens, the Vale cross-check test, and the Vale inline-comment syntax. The server is the only consumer of the rules file. Exceptions use the server's own directives (see D9, amended).
+
+**Why:** The `check` command already gates CI with more than a Vale export could carry: heuristic detectors, per-token severity, overlap merging, and lookaround regexes. Keeping the export taxed every new token with an RE2-safe second pattern and kept a second output format alive only because of D1's original wording. The Vale cross-check was redundant with the per-rule fixtures.
+
+**Cost:** Teams that lint with Vale and want the standard in CI have no drop-in style. That is reach for the standard, not for the server, and can be a separate tool later if the standard finds other adopters.
+
 ## Implementation notes from the Phase 1 build (2026-10-07)
 
 Choices made while building that the decisions above did not settle. Each is small enough to reverse.
 
 - **Overlap precedence.** D6a says to report the earliest violation in an overlapping span and list the rest as `related`. Implemented as most severe first, then most confident, then earliest. Reason: in "It's not just code, it's craft" the CES-C-001 warning starts one word before the CES-C-008 error, and earliest-first would hide the error from a `severity: error` filter.
-- **Front matter is checked.** Vale lints YAML front matter in Markdown, so the server matches it. A page description is prose.
+- **Front matter is checked.** A page description is prose, and most Markdown linters check it too.
 - **Severity filter** is a minimum level: `severity: "warning"` returns errors and warnings.
 - **`rules` versus `includeOptional`.** `rules` runs exactly the named rules, optional ones included, and rejects unknown IDs. `ignore` tolerates unknown IDs, because a writer may carry an ignore list across standard versions.
-- **Directive keys.** `<!-- vale Circe.TrailingContrast = NO -->`, `<!-- vale TrailingContrast = NO -->`, `<!-- vale CES-C-008 = NO -->`, and `<!-- vale off -->` all work. A directive for a split file (`InferiorBaselineWarning`) also silences the server's rule.
-- **`real` skips hyphenated forms** (`real-time`) in the server via a lookahead. Vale cannot (RE2), so the exported token stays bare `real` and Vale keeps that false positive, as it does today.
+- **Directive keys.** Directives take rule IDs in any case, several per comment, separated by spaces or commas. `<!-- ces end -->` with no IDs closes every open ignore; with IDs it closes only those.
+- **`real` skips hyphenated forms** (`real-time`) via a lookahead, so the token is one JavaScript regex with no second pattern for another engine.
 - **CES-C-005 example.** The standard's before example ("That's analytics-adjacent.") has no stock form to match, so the rules file uses "That's no accident.", which is one of the standard's listed surface forms, and the test suite requires every rule's own example to trip the rule.
 - **Fragment detector** (CES-V-007, form `fragment`) runs only on text and quote paragraphs, never on headings, list items, or table cells, and requires the preceding sentence to have eight or more words.
 - **`fix_text` deletions** also remove a dangling comma: "Really, do it." becomes "Do it." and "faster, really." becomes "faster."

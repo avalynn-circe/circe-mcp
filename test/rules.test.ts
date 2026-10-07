@@ -12,11 +12,8 @@ describe("rules file", () => {
     expect(ruleSet.rules.length).toBeGreaterThanOrEqual(13);
   });
 
-  it("gives every rule an example and a Vale name or an explicit opt-out", () => {
-    for (const rule of ruleSet.rules) {
-      expect(rule.example, rule.id).toBeDefined();
-      expect(rule.vale === false || typeof rule.vale.name === "string", rule.id).toBe(true);
-    }
+  it("gives every rule a before/after example", () => {
+    for (const rule of ruleSet.rules) expect(rule.example, rule.id).toBeDefined();
   });
 
   it("has a fixture for every rule and a rule for every fixture", () => {
@@ -29,13 +26,13 @@ describe("rules file", () => {
       validateRuleSet({
         standard: "x",
         version: "1",
-        rules: [{ id: "CES-X-001", name: "n", category: "c", rating: "r", severity: "error", vale: false, description: "d", message: "m", suggestion: "s" }],
+        rules: [{ id: "CES-X-001", name: "n", category: "c", rating: "r", severity: "error", description: "d", message: "m", suggestion: "s" }],
       }),
     ).toThrow(/tokens or a detector/);
   });
 
   it("rejects duplicate IDs, bad severities, and fixable tokens without a fix", () => {
-    const base = { name: "n", category: "c", rating: "r", vale: false, description: "d", message: "m", suggestion: "s" };
+    const base = { name: "n", category: "c", rating: "r", description: "d", message: "m", suggestion: "s" };
     expect(() =>
       validateRuleSet({ standard: "x", version: "1", rules: [{ ...base, id: "CES-X-001", severity: "error", tokens: [{ phrase: "a" }] }, { ...base, id: "CES-X-001", severity: "error", tokens: [{ phrase: "b" }] }] }),
     ).toThrow(/duplicate/);

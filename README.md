@@ -96,19 +96,19 @@ Rules that need a human stay out of `check_text`: the deletion test for CES-C-00
 
 ## Exceptions
 
-A contrast that carries facts the reader needs is allowed under CES-C-008, such as a migration from one database to another. Mark a justified exception with a Vale-style inline comment, so the same text passes both this server and Vale:
+A contrast that carries facts the reader needs is allowed under CES-C-008, such as a migration from one database to another. Mark a justified exception with an inline directive in an HTML comment, which renders as nothing:
 
 ```markdown
-<!-- vale Circe.TrailingContrast = NO -->
+<!-- ces ignore CES-C-008 -->
 The team moved the reports from MS Access to SQL Server rather than rewriting them.
-<!-- vale Circe.TrailingContrast = YES -->
+<!-- ces end -->
 ```
 
-The server honors the style name, the rule ID (`<!-- vale CES-C-008 = NO -->`), and `<!-- vale off -->` / `<!-- vale on -->`. For a single call, pass the rule IDs to skip in the `ignore` parameter.
+A directive takes one or more rule IDs, in any case, separated by spaces or commas. Without an end marker it runs to the end of the text. `<!-- ces end CES-C-008 -->` closes one rule and leaves the others open. `<!-- ces off -->` and `<!-- ces on -->` silence every rule for a section. For a single call, pass the rule IDs to skip in the `ignore` parameter.
 
 ## Markdown
 
-Fenced code blocks, inline code, link destinations, HTML tags, and comments are skipped. Front matter is checked, as Vale checks it, because a page description is prose. Pass `checkCode: true` to lint code comments too (CES-K-003). Line and column numbers refer to the original text.
+Fenced code blocks, inline code, link destinations, HTML tags, and comments are skipped. Front matter is checked, because a page description is prose. Pass `checkCode: true` to lint code comments too (CES-K-003). Line and column numbers refer to the original text.
 
 ## Fixes
 
@@ -116,19 +116,11 @@ Fenced code blocks, inline code, link destinations, HTML tags, and comments are 
 
 Every other rule is report-only.
 
-## The rules file and Vale
+## The rules file
 
-`rules/ces.yaml` is the single source of truth. Each rule carries its ID, severity, description, message, suggestion, exception, a before/after example, and its tokens with per-token severity and confidence. The server loads it at startup.
+`rules/ces.yaml` is the single source of truth. Each rule carries its ID, severity, description, message, suggestion, exception, a before/after example, and its tokens with per-token severity and confidence. Heuristic rules name a detector in `src/detectors.ts`. The server loads the file at startup and validates every entry, so a typo in a rule fails fast with a message that names the rule and the field.
 
-The same file can generate a Vale style, for projects that lint Markdown with Vale in CI:
-
-```sh
-npx circe-mcp export-vale path/to/styles/Circe --readme-table
-```
-
-The export writes one `.yml` file per rule. A rule whose tokens have mixed severities, such as CES-C-008, gets a second file with a level suffix (`TrailingContrastWarning.yml`), because a Vale rule carries one level. Heuristic rules that Vale cannot express are skipped. The flag prints a Markdown table of the exported rules for a project README.
-
-Vale lints `real` inside `real-time`; the server skips the hyphenated form. Vale reports overlapping hits separately; the server merges them. The test suite runs Vale on the exported styles when a `vale` binary is available and confirms both tools flag the same rules on the same lines.
+Adding a rule is one YAML entry plus a fixture with a text it flags and a text it passes. The test suite refuses a rule without a fixture and a fixture without a rule.
 
 ## Command line
 
@@ -138,7 +130,6 @@ circe-mcp http --port 3000       # MCP server over Streamable HTTP
 circe-mcp check README.md docs/  # lint files; exit 1 on an error-level hit
 circe-mcp fix draft.md --write   # apply the safe fixes in place
 circe-mcp measure draft.md       # statistics as JSON
-circe-mcp export-vale styles/Circe
 ```
 
 `check` takes `--fail-on warning` to make warnings fail too, `--include-optional` to run the optional rules, and `--json` for machine-readable output.
@@ -147,7 +138,7 @@ circe-mcp export-vale styles/Circe
 
 ```sh
 npm install
-npm test             # Vitest: fixtures per rule, positions, exceptions, fixes, export, MCP round trip
+npm test             # Vitest: fixtures per rule, positions, exceptions, fixes, MCP round trip
 npm run typecheck
 npm run build        # compiles to dist/; the server reads rules/ces.yaml from the package root
 npm run check        # typecheck, test, build

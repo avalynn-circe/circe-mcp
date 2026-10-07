@@ -39,8 +39,8 @@ describe("fix_text", () => {
     expect(fix(once).text).toBe(once);
   });
 
-  it("respects ignore and Vale directives", () => {
-    const text = "<!-- vale Circe.Hedges = NO -->\nIt is actually fine.";
+  it("respects the ignore parameter and inline directives", () => {
+    const text = "<!-- ces ignore CES-Q-001 -->\nIt is actually fine.";
     expect(fix(text).text).toBe(text);
     expect(fixText(checker, "It is actually fine.", { ignore: ["CES-Q-001"] }).text).toBe("It is actually fine.");
   });

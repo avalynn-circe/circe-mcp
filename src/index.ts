@@ -1,6 +1,5 @@
 export { Checker, compileToken, mergeOverlaps } from "./check.js";
 export { DETECTORS } from "./detectors.js";
-export { buildValeFiles, exportVale, readmeTable } from "./export-vale.js";
 export { fixText } from "./fix.js";
 export type { AppliedFix, FixResult } from "./fix.js";
 export { prepare, position, isDisabled } from "./markdown.js";

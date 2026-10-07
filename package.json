@@ -25,7 +25,6 @@
     "test:watch": "vitest",
     "start": "node dist/cli.js",
     "start:http": "node dist/cli.js http",
-    "export-vale": "node dist/cli.js export-vale",
     "check": "npm run typecheck && npm test && npm run build"
   },
   "keywords": [
@@ -34,7 +33,6 @@
     "editorial",
     "style-guide",
     "linter",
-    "vale",
     "writing"
   ],
   "author": "Avalynn Circe",
