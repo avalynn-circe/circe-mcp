@@ -10,7 +10,7 @@ const ruleSet = loadRules();
 const { files, skipped } = buildValeFiles(ruleSet);
 
 describe("export-vale", () => {
-  it("keeps the file names circe-docs already uses", () => {
+  it("names each file after its rule", () => {
     const names = files.map((f) => f.path);
     for (const n of ["EmDash.yml", "Hedges.yml", "Intensifiers.yml", "TrailingContrast.yml", "InferiorBaseline.yml"]) expect(names).toContain(n);
   });

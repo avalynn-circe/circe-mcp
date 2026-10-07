@@ -18,7 +18,7 @@ Usage:
       [--fail-on error|warning|suggestion] [--include-optional] [--json]
   circe-mcp fix <file> [--write]    Print the text with safe fixes applied, or write it back.
   circe-mcp measure <file>          Print statistics for a file as JSON.
-  circe-mcp export-vale <dir>       Write Vale style files into <dir> (such as circe-docs/styles/Circe).
+  circe-mcp export-vale <dir>       Write Vale style files into <dir> (a Vale StylesPath folder).
       [--readme-table]              Also print a Markdown rule table for the README.
   circe-mcp --help | --version
 `;

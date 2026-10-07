@@ -1,8 +1,10 @@
 # Decisions: circe-mcp
 
-## D1. Where the rules live (2026-10-07)
+## D1. Where the rules live (2026-10-07, amended the same day)
 
-**Decision:** Rules live in circe-mcp as a single YAML rules file. The server exports the Vale styles (`npx circe-mcp export-vale`), and circe-docs consumes that output.
+**Original decision:** Rules live in circe-mcp as a single YAML rules file. The server exports the Vale styles (`npx circe-mcp export-vale`), and circe-docs consumes that output.
+
+**Amended decision:** Rules live in circe-mcp as a single YAML rules file. The server exports an equivalent Vale style for any project that lints with Vale. No other project is named as a consumer; see D14.
 
 **Why:** Put the rules where they are edited most. Rule changes will come mostly from building and testing the server. Each rule entry can carry examples and fix data that Vale YAML can't hold. Heuristic rules are marked `vale: false` and skipped in the export.
 
@@ -22,14 +24,13 @@
 
 **Why:** Inferior baseline is a sentence construction, closely related to trailing contrast (CES-C-008).
 
-**Repo check (2026-10-07):** The circe-docs README names IDs the handoff left out: throat-clear CES-C-003, trailing bow C-004, so-what gloss C-005, pronouncement C-006, vague perfection V-004. So C-003 through C-008 are taken and a fourth prefix, V, exists. C-001 and C-002 are not visible in the repo. The full standard is not in circe-docs, so C-009 is unconfirmed until the standard document is checked. The D8 word-list groups (clichés, over-enthusiasm) likely belong under V alongside V-004.
+**ID survey (2026-10-07):** Before the full standard was available, a published rule list named throat-clear CES-C-003, trailing bow C-004, so-what gloss C-005, pronouncement C-006, and vague perfection V-004, so C-003 through C-008 were taken and a fourth prefix, V, existed. The full standard later confirmed C-001 and C-002 as well.
 
-## Repo check summary (2026-10-07)
+## Rule inventory check (2026-10-07)
 
-- Vale inventory in the handoff matches circe-docs exactly: five rules, same IDs, levels, and tokens.
-- circe-docs uses three Vale levels: error (MUST AVOID), warning (SHOULD AVOID), suggestion (MAY AVOID). The server's severity field should include `suggestion`.
-- Vale skips fenced code blocks in Markdown. The server must match this (already in acceptance criteria).
-- The full CES document is not in circe-docs. Its location is needed to confirm rule IDs.
+- The handoff's "In Vale today" table matched the five existing Vale rules exactly: same IDs, levels, and tokens.
+- Vale's three levels map to the standard's tiers: error (MUST AVOID), warning (SHOULD AVOID), suggestion (MAY AVOID). The server's severity field includes `suggestion`.
+- Vale skips fenced code blocks in Markdown. The server matches this by default (D12).
 
 ## D4. Severity for inferior baseline (2026-10-07)
 
@@ -128,7 +129,7 @@ Auto-fix stays for em dashes, hedges, and intensifiers, but only for tokens mark
 
 ## D12. Code blocks (new)
 
-CES-K-003 (MAY) says comments inside code blocks follow all rules. The server skips fenced code blocks and inline code by default, matching Vale and the circe-docs README. A `checkCode: true` option on `check_text` lints code blocks too. Recorded so the skip is a decision, not an omission.
+CES-K-003 (MAY) says comments inside code blocks follow all rules. The server skips fenced code blocks and inline code by default, matching Vale. A `checkCode: true` option on `check_text` lints code blocks too. Recorded so the skip is a decision, not an omission.
 
 ## D13. Phase 1.5 scope (new, 2026-10-07)
 
@@ -151,16 +152,20 @@ Not planned for any phase (need human judgment or are not text rules): A-001, A-
 
 "Onboarding is a path rather than a finish line" (the C-007 worked example) trips C-008. It is the fixture for D9 exception handling: flagged without an ignore, clean with `<!-- vale Circe.TrailingContrast = NO -->` or `ignore: ["CES-C-008"]`.
 
-## D1 follow-through
+## D14. Independence from circe-docs (2026-10-07)
 
-Under D1 the five files in `circe-docs/styles/Circe/` and the README rule table become generated output. The comment blocks in the YAML files (rating, exception, inline-comment instructions) come from `description` and `exception` fields in the rules file, so the export reproduces them.
+**Decision:** circe-mcp is a standalone project. It does not read from, write to, link to, or name circe-docs anywhere in its code, rules, tests, or README. The Vale export is a generic feature for any Vale user; wiring it into a particular site's CI is that site's business.
+
+**Why:** The two projects share an author and a standard, nothing else. A portfolio piece should stand on its own, and a reader of circe-mcp should not need a second repository to understand it.
+
+**Consequence:** The handoff's release step "add a page to circe-docs" is dropped from this project's plan.
 
 ## Implementation notes from the Phase 1 build (2026-10-07)
 
 Choices made while building that the decisions above did not settle. Each is small enough to reverse.
 
 - **Overlap precedence.** D6a says to report the earliest violation in an overlapping span and list the rest as `related`. Implemented as most severe first, then most confident, then earliest. Reason: in "It's not just code, it's craft" the CES-C-001 warning starts one word before the CES-C-008 error, and earliest-first would hide the error from a `severity: error` filter.
-- **Front matter is checked.** Vale lints YAML front matter in Markdown, and the circe-docs CI gate is Vale, so the server matches it. A page description is prose.
+- **Front matter is checked.** Vale lints YAML front matter in Markdown, so the server matches it. A page description is prose.
 - **Severity filter** is a minimum level: `severity: "warning"` returns errors and warnings.
 - **`rules` versus `includeOptional`.** `rules` runs exactly the named rules, optional ones included, and rejects unknown IDs. `ignore` tolerates unknown IDs, because a writer may carry an ignore list across standard versions.
 - **Directive keys.** `<!-- vale Circe.TrailingContrast = NO -->`, `<!-- vale TrailingContrast = NO -->`, `<!-- vale CES-C-008 = NO -->`, and `<!-- vale off -->` all work. A directive for a split file (`InferiorBaselineWarning`) also silences the server's rule.

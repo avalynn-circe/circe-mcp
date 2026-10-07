@@ -1,8 +1,8 @@
 # circe-mcp
 
-An MCP server that checks text against the [Circe Editorial Standard](https://github.com/avalynn-circe/circe-docs) (CES) v0.3 and returns each violation with its rule ID, line and column, severity, confidence, and a suggested fix. Every check is deterministic pattern matching. The server makes no LLM calls, so a check costs nothing to run and gives the same answer every time.
+An MCP server that checks text against the Circe Editorial Standard (CES) v0.3 and returns each violation with its rule ID, line and column, severity, confidence, and a suggested fix. Every check is deterministic pattern matching. The server makes no LLM calls, so a check costs nothing to run and gives the same answer every time.
 
-The standard catches the writing patterns that read as machine-generated: em dashes, hedges, hollow intensifiers, trailing contrast clauses, negate-then-elevate constructions, throat-clearing openers, and the rest. This server is the standard's automated reviewer. The same rules file also generates the Vale styles that lint the circe-docs site in CI.
+The standard catches the writing patterns that read as machine-generated: em dashes, hedges, hollow intensifiers, trailing contrast clauses, negate-then-elevate constructions, throat-clearing openers, and the rest. This server is the standard's automated reviewer. The standard is a working draft by Avalynn Circe; `explain_rule` carries the text of every rule the server enforces.
 
 ## Install
 
@@ -96,7 +96,7 @@ Rules that need a human stay out of `check_text`: the deletion test for CES-C-00
 
 ## Exceptions
 
-A contrast that carries facts the reader needs is allowed under CES-C-008, such as a migration from one database to another. Mark a justified exception the way circe-docs does, with a Vale inline comment:
+A contrast that carries facts the reader needs is allowed under CES-C-008, such as a migration from one database to another. Mark a justified exception with a Vale-style inline comment, so the same text passes both this server and Vale:
 
 ```markdown
 <!-- vale Circe.TrailingContrast = NO -->
@@ -120,13 +120,13 @@ Every other rule is report-only.
 
 `rules/ces.yaml` is the single source of truth. Each rule carries its ID, severity, description, message, suggestion, exception, a before/after example, and its tokens with per-token severity and confidence. The server loads it at startup.
 
-The same file generates the Vale style that circe-docs runs in CI:
+The same file can generate a Vale style, for projects that lint Markdown with Vale in CI:
 
 ```sh
-npx circe-mcp export-vale path/to/circe-docs/styles/Circe --readme-table
+npx circe-mcp export-vale path/to/styles/Circe --readme-table
 ```
 
-The export writes one `.yml` file per rule. A rule whose tokens have mixed severities, such as CES-C-008, gets a second file with a level suffix (`TrailingContrastWarning.yml`), because a Vale rule carries one level. Heuristic rules that Vale cannot express are skipped. The flag prints a Markdown table for the circe-docs README, so that copy stays in step too.
+The export writes one `.yml` file per rule. A rule whose tokens have mixed severities, such as CES-C-008, gets a second file with a level suffix (`TrailingContrastWarning.yml`), because a Vale rule carries one level. Heuristic rules that Vale cannot express are skipped. The flag prints a Markdown table of the exported rules for a project README.
 
 Vale lints `real` inside `real-time`; the server skips the hyphenated form. Vale reports overlapping hits separately; the server merges them. The test suite runs Vale on the exported styles when a `vale` binary is available and confirms both tools flag the same rules on the same lines.
 

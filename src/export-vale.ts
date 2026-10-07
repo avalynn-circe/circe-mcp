@@ -52,7 +52,7 @@ export function buildValeFiles(ruleSet: RuleSet): ExportResult {
   return { files, skipped };
 }
 
-/** Writes the files into a directory such as circe-docs/styles/Circe. */
+/** Writes the files into a Vale style directory, such as styles/Circe under a StylesPath. */
 export function exportVale(ruleSet: RuleSet, dir: string): ExportResult {
   const result = buildValeFiles(ruleSet);
   mkdirSync(dir, { recursive: true });
@@ -60,7 +60,7 @@ export function exportVale(ruleSet: RuleSet, dir: string): ExportResult {
   return result;
 }
 
-/** Markdown rows for a README rule table, matching the circe-docs README layout. */
+/** Markdown rows for a README rule table: rule, file, level, and the tokens it catches. */
 export function readmeTable(ruleSet: RuleSet): string {
   const { files } = buildValeFiles(ruleSet);
   const lines = ["| Rule | File | Level | Catches |", "|---|---|---|---|"];

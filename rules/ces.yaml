@@ -1,8 +1,8 @@
 # Circe Editorial Standard rules for circe-mcp.
 #
 # This file is the single source of truth (DECISIONS.md, D1). The server loads it
-# at startup, and `circe-mcp export-vale` generates the Vale style files that
-# circe-docs consumes.
+# at startup, and `circe-mcp export-vale` generates an equivalent Vale style for
+# projects that lint with Vale.
 #
 # Rule fields
 #   id                CES rule identifier from the standard.
