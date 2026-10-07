@@ -1,5 +1,5 @@
-# Publishes to npm when a GitHub release is published. Uses npm trusted
-# publishing (OIDC), so no npm token is stored in the repository.
+# Publishes to npm and then to the MCP Registry when a GitHub release is
+# published. Both use OIDC, so no token is stored in the repository.
 #
 # One-time setup, after the first manual publish from a terminal:
 #   npmjs.com > circe-mcp > Settings > Trusted publishing > GitHub Actions
@@ -36,3 +36,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm publish --provenance --access public
+      - name: Publish the listing to the MCP Registry
+        run: |
+          curl -sSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          node -e "const fs=require('fs');const s=JSON.parse(fs.readFileSync('server.json','utf8'));const v=require('./package.json').version;s.version=v;s.packages[0].version=v;fs.writeFileSync('server.json',JSON.stringify(s,null,2)+'\n')"
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

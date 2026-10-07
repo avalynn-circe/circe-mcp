@@ -28,8 +28,8 @@ Open the package page, then Settings, then Trusted publishing. Add a GitHub Acti
 2. Tag it and push: `git tag v0.2.0 && git push origin main v0.2.0`.
 3. On GitHub, publish a release from the tag. The notes are the changelog.
 
-The Publish workflow checks that the tag matches `package.json`, runs the type check and the tests, and publishes with provenance. A failed check publishes nothing.
+The Publish workflow checks that the tag matches `package.json`, runs the type check and the tests, publishes to npm with provenance, and then publishes the listing in `server.json` to the MCP Registry with the version stamped in. A failed check publishes nothing.
 
 ## Registry listing
 
-`package.json` carries `mcpName: io.github.avalynn-circe/circe-mcp`. The MCP Registry reads that field from the published npm package to confirm ownership, so it has to be in place before the first publish, and it already is.
+`server.json` describes the server for the MCP Registry, and `package.json` carries the matching `mcpName: io.github.avalynn-circe/circe-mcp`. The registry reads that field from the published npm package to confirm ownership. The first listing was published by hand with `mcp-publisher login github` and `mcp-publisher publish`; the workflow handles later versions through GitHub's OIDC identity.
